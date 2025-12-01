@@ -86,7 +86,7 @@
   "marketing.footer.links.github": "GitHub",
   "marketing.footer.links.contact": "Contact",
   "marketing.footer.languages.en": "English",
-  "marketing.footer.languages.zh-CN": "简体中文",
+  "marketing.footer.languages.zh": "简体中文",
   "login.title": "Sign in to SaaSwift",
   "login.subtitle": "Use Google or email verification to access your growth workspace.",
   "login.or": "or",
@@ -121,7 +121,7 @@
   "footer.toggleDark": "Toggle dark mode",
   "footer.toggleLocale": "Change language",
   "locale.en": "English",
-  "locale.zh-CN": "简体中文",
+  "locale.zh": "简体中文",
   "notFound.title": "Page not found",
   "notFound.subtitle": "The page you’re looking for doesn’t exist.",
   "notFound.back": "Back to home"

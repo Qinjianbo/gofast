@@ -1,7 +1,7 @@
 import { unref, type Ref } from 'vue'
-import type { Router, RouteLocationNormalizedLoaded, RouteLocationRaw } from 'vue-router/auto'
+import type { Router, RouteLocationNormalizedLoaded, RouteLocationRaw } from 'vue-router'
 
-import { defaultLocale } from '~/modules/i18n'
+import { availableLocales, defaultLocale, type SupportedLocale } from '~/modules/i18n'
 
 type MaybeString = string | number | Ref<string> | Ref<number> | Ref<string | number>
 type MaybeLocale = MaybeString | null | undefined
@@ -37,9 +37,11 @@ export function useLocaleNavigation(router: Router, currentRoute: RouteLocationN
     const effectiveLocale = resolveEffectiveLocale(locale, currentRoute)
     const resolved = router.resolve(target)
 
+    const basePath = stripKnownLocale(resolved.path)
+
     const nextPath = effectiveLocale === defaultLocale
-      ? stripLocaleSegment(resolved.path)
-      : addLocaleSegment(effectiveLocale, resolved.path)
+      ? basePath
+      : addLocaleSegment(effectiveLocale, basePath)
 
     return {
       path: nextPath,
@@ -56,19 +58,21 @@ export function useLocaleNavigation(router: Router, currentRoute: RouteLocationN
   }
 }
 
-function stripLocaleSegment(pathValue: string) {
+function stripKnownLocale(pathValue: string) {
   const normalized = ensureLeadingSlash(pathValue)
   const segments = normalized.split('/').filter(Boolean)
   if (segments.length === 0)
     return '/'
-  if (segments[0] === defaultLocale)
+
+  if (isSupportedLocaleSegment(segments[0]))
     segments.shift()
+
   const joined = segments.join('/')
   return joined ? `/${joined}` : '/'
 }
 
 function addLocaleSegment(locale: string, pathValue: string) {
-  const normalized = ensureLeadingSlash(stripLocaleSegment(pathValue))
+  const normalized = ensureLeadingSlash(pathValue)
   if (normalized === '/' || normalized === '')
     return `/${locale}`
   return `/${locale}${normalized}`
@@ -78,4 +82,8 @@ function ensureLeadingSlash(pathValue: string) {
   if (!pathValue)
     return '/'
   return pathValue.startsWith('/') ? pathValue : `/${pathValue}`
+}
+
+function isSupportedLocaleSegment(value: string): value is SupportedLocale {
+  return availableLocales.includes(value as SupportedLocale)
 }

@@ -1,6 +1,5 @@
 import { createApp, createSSRApp, watch } from 'vue'
-import { createMemoryHistory } from 'vue-router'
-import { createRouter, createWebHistory } from 'vue-router/auto'
+import { createRouter, createWebHistory, createMemoryHistory } from 'vue-router'
 import { routes as generatedRoutes } from 'vue-router/auto-routes'
 import { setupLayouts } from 'virtual:generated-layouts'
 import App from './App.vue'
@@ -16,7 +15,7 @@ import './styles/main.css'
 
 const isServer = typeof window === 'undefined'
 
-const routes = setupLayouts(generatedRoutes)
+const routes = setupLayouts([...generatedRoutes])
 
 export function makeApp(initialState: SsrState = {}) {
   const app = isServer ? createSSRApp(App) : createApp(App)
@@ -122,6 +121,8 @@ function normalizeLocaleParam(value: string | undefined): SupportedLocale | unde
 
 function buildLocalizedPath(locale: SupportedLocale, originalPath: string) {
   const suffix = extractPathSuffix(originalPath)
+  if (locale === defaultLocale)
+    return suffix || '/'
   return suffix ? `/${locale}${suffix}` : `/${locale}`
 }
 

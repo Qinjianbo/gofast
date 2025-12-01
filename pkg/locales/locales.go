@@ -2,7 +2,7 @@ package locales
 
 import "strings"
 
-var Supported = []string{"en", "zh-CN"}
+var Supported = []string{"en", "zh"}
 
 const Default = "en"
 

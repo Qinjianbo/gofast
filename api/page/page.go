@@ -173,7 +173,7 @@ func (h homePayload) AsMap() map[string]any {
 
 func announcementByLocale(locale string) string {
 	switch locale {
-	case "zh-CN":
+	case "zh":
 		return "欢迎体验 Go + Vite SSR 示例"
 	default:
 		return "Welcome to the Go + Vite SSR demo"
@@ -182,7 +182,7 @@ func announcementByLocale(locale string) string {
 
 func defaultName(locale string) string {
 	switch locale {
-	case "zh-CN":
+	case "zh":
 		return "朋友"
 	default:
 		return "friend"
@@ -191,7 +191,7 @@ func defaultName(locale string) string {
 
 func greetingByLocale(locale string, name string) string {
 	switch locale {
-	case "zh-CN":
+	case "zh":
 		return fmt.Sprintf("你好，%s！", name)
 	default:
 		return fmt.Sprintf("Hello, %s!", name)

@@ -86,7 +86,7 @@
   "marketing.footer.links.github": "GitHub",
   "marketing.footer.links.contact": "联系我们",
   "marketing.footer.languages.en": "English",
-  "marketing.footer.languages.zh-CN": "简体中文",
+  "marketing.footer.languages.zh": "简体中文",
   "login.title": "登录 SaaSwift",
   "login.subtitle": "使用 Google 或邮箱验证码登录，开启增长工作区。",
   "login.or": "或",
@@ -121,7 +121,7 @@
   "footer.toggleDark": "切换深色模式",
   "footer.toggleLocale": "切换语言",
   "locale.en": "English",
-  "locale.zh-CN": "简体中文",
+  "locale.zh": "简体中文",
   "notFound.title": "页面未找到",
   "notFound.subtitle": "您访问的页面不存在或已被移动。",
   "notFound.back": "返回首页"
