@@ -33,10 +33,18 @@ RUN pnpm build
 
 
 # ----------------------------------------------------
-# Stage 2: Backend Build (Goja only - 无需 CGO)
+# Stage 2: Backend Build (V8 版本 - 需要 CGO)
 # ----------------------------------------------------
-FROM golang:1.25-alpine AS backend
+FROM golang:1.25 AS backend
 ARG FRONTEND_DIR
+ARG TARGETOS
+ARG TARGETARCH
+
+# 安装 C/C++ 编译工具链，用于 CGO (v8go 依赖)
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -57,20 +65,23 @@ COPY --from=frontend /app/${FRONTEND_DIR}/dist/client ./webssr/dist/client
 COPY --from=frontend /app/${FRONTEND_DIR}/dist/server ./webssr/dist/server
 COPY ./${FRONTEND_DIR}/webssr.go ./webssr/webssr.go
 
-# Goja 版本不需要 CGO
-ENV CGO_ENABLED=0
-RUN go build -tags nov8 -o build/server -ldflags "-w -s" ./cmd/website/...
+# V8 版本需要 CGO
+ENV CGO_ENABLED=1
+RUN GOOS=${TARGETOS:-$(go env GOOS)} \
+    GOARCH=${TARGETARCH:-$(go env GOARCH)} \
+    go build -o build/server -ldflags "-w -s" ./cmd/website/...
 
 
 # ----------------------------------------------------
-# Stage 3: Final Runtime
+# Stage 3: Final Runtime (需要 GLIBC 兼容)
 # ----------------------------------------------------
 FROM alpine:latest AS final
 
 WORKDIR /app
 
+# V8 版本需要 GLIBC 兼容包
 RUN apk update && \
-    apk add --no-cache tzdata && \
+    apk add --no-cache libc6-compat gcompat libstdc++ tzdata && \
     rm -rf /var/cache/apk/*
 
 COPY --from=backend /app/build/server /app/
@@ -78,6 +89,9 @@ COPY ./conf /app/conf
 
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# 默认使用 V8 引擎，可通过环境变量切换
+ENV SSR_ENGINE=v8
 
 EXPOSE 8080
 

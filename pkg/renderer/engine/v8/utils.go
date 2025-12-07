@@ -1,12 +1,15 @@
-package renderer
+//go:build !nov8
+
+package v8
 
 import (
 	"errors"
 	"fmt"
+
 	"rogchap.com/v8go"
 )
 
-func resolvePromise(ctx *v8go.Context, val *v8go.Value, err error) (*v8go.Value, error) {
+func resolveV8Promise(ctx *v8go.Context, val *v8go.Value, err error) (*v8go.Value, error) {
 	if err != nil || !val.IsPromise() {
 		return val, err
 	}
@@ -25,7 +28,7 @@ func resolvePromise(ctx *v8go.Context, val *v8go.Value, err error) (*v8go.Value,
 	}
 }
 
-func formatError(err error) error {
+func formatV8Error(err error) error {
 	var jsErr *v8go.JSError
 	if errors.As(err, &jsErr) {
 		err = fmt.Errorf("%v", jsErr.StackTrace)

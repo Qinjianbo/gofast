@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"net/http/pprof"
 	"net/url"
 	"os"
 	"regexp"
@@ -38,6 +39,7 @@ var langAttributePattern = regexp.MustCompile(`lang="[^"]*"`)
 
 func RunBlocking(router *gin.Engine, frontendBuild FrontendBuild, fetcher BackendDataFetcher) {
 	devMode := isDevMode()
+	registerPprof(router)
 	router.GET("/i/:invite_code", func(c *gin.Context) {
 		inviteCode := strings.TrimSpace(c.Param("invite_code"))
 		if inviteCode != "" {
@@ -48,7 +50,7 @@ func RunBlocking(router *gin.Engine, frontendBuild FrontendBuild, fetcher Backen
 
 	var (
 		indexHTML string
-		ssr       *renderer.Renderer
+		ssr       renderer.Renderer
 		proxy     *httputil.ReverseProxy
 		renderSem chan struct{}
 	)
@@ -75,7 +77,7 @@ func RunBlocking(router *gin.Engine, frontendBuild FrontendBuild, fetcher Backen
 		if err != nil {
 			log.Fatalf("failed to read server.js: %v", err)
 		}
-		ssr = renderer.NewRenderer(string(serverEntry))
+		ssr = newRendererFromEnv(string(serverEntry))
 		prewarmRenderer(ssr)
 
 		renderLimit := renderConcurrencyLimit()
@@ -89,6 +91,9 @@ func RunBlocking(router *gin.Engine, frontendBuild FrontendBuild, fetcher Backen
 		}
 
 		router.StaticFS("/assets", http.FS(assetsFS))
+
+		// 注册根目录静态文件 (favicon.svg, logo.svg 等)
+		registerRootStaticFiles(router, frontendBuild.FrontendDist)
 
 		router.NoRoute(func(c *gin.Context) {
 			if strings.HasPrefix(c.Request.URL.Path, DefaultSSRFetchPrefix) {
@@ -349,7 +354,7 @@ func newDevProxy(rawURL string) *httputil.ReverseProxy {
 	return proxy
 }
 
-func renderWithTimeout(ssr *renderer.Renderer, urlPath string, payload map[string]any, timeout time.Duration, sem chan struct{}) (renderer.Result, error) {
+func renderWithTimeout(ssr renderer.Renderer, urlPath string, payload map[string]any, timeout time.Duration, sem chan struct{}) (renderer.Result, error) {
 	type renderResult struct {
 		result renderer.Result
 		err    error
@@ -391,10 +396,67 @@ func renderConcurrencyLimit() int {
 	return runtime.GOMAXPROCS(0)
 }
 
-func prewarmRenderer(ssr *renderer.Renderer) {
+func prewarmRenderer(ssr renderer.Renderer) {
 	go func() {
 		_, _ = ssr.Render("/", nil)
 	}()
+}
+
+// newRendererFromEnv 在 ssr_v8.go 和 ssr_nov8.go 中定义
+
+func registerPprof(router *gin.Engine) {
+	if !isPprofEnabled() {
+		return
+	}
+	log.Printf("pprof enabled at /debug/pprof")
+	group := router.Group("/debug/pprof")
+	group.GET("/", gin.WrapF(pprof.Index))
+	group.GET("/cmdline", gin.WrapF(pprof.Cmdline))
+	group.GET("/profile", gin.WrapF(pprof.Profile))
+	group.POST("/symbol", gin.WrapF(pprof.Symbol))
+	group.GET("/symbol", gin.WrapF(pprof.Symbol))
+	group.GET("/trace", gin.WrapF(pprof.Trace))
+	group.GET("/allocs", gin.WrapH(pprof.Handler("allocs")))
+	group.GET("/block", gin.WrapH(pprof.Handler("block")))
+	group.GET("/goroutine", gin.WrapH(pprof.Handler("goroutine")))
+	group.GET("/heap", gin.WrapH(pprof.Handler("heap")))
+	group.GET("/mutex", gin.WrapH(pprof.Handler("mutex")))
+	group.GET("/threadcreate", gin.WrapH(pprof.Handler("threadcreate")))
+}
+
+func isPprofEnabled() bool {
+	if raw := strings.ToLower(strings.TrimSpace(os.Getenv("ENABLE_PPROF"))); raw != "" {
+		switch raw {
+		case "1", "true", "yes", "on":
+			return true
+		default:
+			return false
+		}
+	}
+	return isDevMode()
+}
+
+func registerRootStaticFiles(router *gin.Engine, frontendDist fs.FS) {
+	entries, err := fs.ReadDir(frontendDist, ".")
+	if err != nil {
+		log.Printf("failed to read frontend dist root: %v", err)
+		return
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if name == "index.html" {
+			continue
+		}
+		router.GET("/"+name, func(fileName string) gin.HandlerFunc {
+			return func(c *gin.Context) {
+				c.FileFromFS(fileName, http.FS(frontendDist))
+			}
+		}(name))
+	}
 }
 
 func buildFallbackPage(indexHTML string, payload map[string]any, locale string, reqID string) string {
