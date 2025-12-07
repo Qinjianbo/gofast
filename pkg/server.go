@@ -90,9 +90,11 @@ func RunBlocking(router *gin.Engine, frontendBuild FrontendBuild, fetcher Backen
 			log.Fatalf("failed to prepare assets filesystem: %v", err)
 		}
 
-		router.StaticFS("/assets", http.FS(assetsFS))
+		// /assets 目录使用长期缓存（文件名带 hash）
+		router.Group("/assets", cacheControlMiddleware("public, max-age=31536000, immutable")).
+			StaticFS("/", http.FS(assetsFS))
 
-		// 注册根目录静态文件 (favicon.svg, logo.svg 等)
+		// 根目录静态文件使用短期缓存
 		registerRootStaticFiles(router, frontendBuild.FrontendDist)
 
 		router.NoRoute(func(c *gin.Context) {
@@ -451,11 +453,20 @@ func registerRootStaticFiles(router *gin.Engine, frontendDist fs.FS) {
 		if name == "index.html" {
 			continue
 		}
+		// 根目录文件（favicon, logo 等）使用短期缓存
 		router.GET("/"+name, func(fileName string) gin.HandlerFunc {
 			return func(c *gin.Context) {
+				c.Header("Cache-Control", "public, max-age=86400")
 				c.FileFromFS(fileName, http.FS(frontendDist))
 			}
 		}(name))
+	}
+}
+
+func cacheControlMiddleware(value string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Cache-Control", value)
+		c.Next()
 	}
 }
 
