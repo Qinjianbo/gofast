@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"vitego/pkg"
-	"vitego/pkg/locales"
+	"github.com/daodao97/gossr"
+	"github.com/daodao97/gossr/locales"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,7 +25,7 @@ func Router(group *gin.RouterGroup) {
 
 // Resolve 在服务端内部匹配路径并返回对应 payload，避免经过全局中间件产生副作用。
 // 返回值：payload，HTTP status（200/404/500），错误。
-func Resolve(ctx context.Context, rawPath, rawQuery string) (pkg.SSRPayload, int, error) {
+func Resolve(ctx context.Context, rawPath, rawQuery string) (gossr.SSRPayload, int, error) {
 	cleanPath := path.Clean("/" + strings.TrimPrefix(strings.TrimSpace(rawPath), "/"))
 	query, _ := url.ParseQuery(rawQuery)
 
@@ -59,7 +59,7 @@ func Resolve(ctx context.Context, rawPath, rawQuery string) (pkg.SSRPayload, int
 	return nil, http.StatusNotFound, nil
 }
 
-func handleSSRFetch(h func(*gin.Context) (pkg.SSRPayload, error)) gin.HandlerFunc {
+func handleSSRFetch(h func(*gin.Context) (gossr.SSRPayload, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		payload, err := h(c)
 		if err != nil {
@@ -76,7 +76,7 @@ func handleSSRFetch(h func(*gin.Context) (pkg.SSRPayload, error)) gin.HandlerFun
 	}
 }
 
-func Home(_ *gin.Context) (pkg.SSRPayload, error) {
+func Home(_ *gin.Context) (gossr.SSRPayload, error) {
 	locale := locales.Default
 
 	return homePayload{
@@ -86,7 +86,7 @@ func Home(_ *gin.Context) (pkg.SSRPayload, error) {
 	}, nil
 }
 
-func Hi(c *gin.Context) (pkg.SSRPayload, error) {
+func Hi(c *gin.Context) (gossr.SSRPayload, error) {
 	locale := locales.Default
 	name := c.Param("name")
 	if name == "" {
@@ -105,7 +105,7 @@ func Hi(c *gin.Context) (pkg.SSRPayload, error) {
 	}, nil
 }
 
-func HomeLocale(c *gin.Context) (pkg.SSRPayload, error) {
+func HomeLocale(c *gin.Context) (gossr.SSRPayload, error) {
 	locale := locales.Normalize(paramLocale(c))
 
 	return homePayload{
@@ -115,7 +115,7 @@ func HomeLocale(c *gin.Context) (pkg.SSRPayload, error) {
 	}, nil
 }
 
-func HiLocale(c *gin.Context) (pkg.SSRPayload, error) {
+func HiLocale(c *gin.Context) (gossr.SSRPayload, error) {
 	locale := locales.Normalize(paramLocale(c))
 	name := c.Param("name")
 	if name == "" {
@@ -200,7 +200,7 @@ func greetingByLocale(locale string, name string) string {
 
 type ssrRoute struct {
 	pattern string
-	handler func(*gin.Context) (pkg.SSRPayload, error)
+	handler func(*gin.Context) (gossr.SSRPayload, error)
 	regex   *regexp.Regexp
 	params  []string
 }
@@ -212,7 +212,7 @@ var ssrRoutes = []ssrRoute{
 	newSSRRoute("/:locale/hi/:name", HiLocale),
 }
 
-func newSSRRoute(pattern string, handler func(*gin.Context) (pkg.SSRPayload, error)) ssrRoute {
+func newSSRRoute(pattern string, handler func(*gin.Context) (gossr.SSRPayload, error)) ssrRoute {
 	segments := strings.Split(strings.Trim(pattern, "/"), "/")
 	paramNames := []string{}
 	for i, segment := range segments {

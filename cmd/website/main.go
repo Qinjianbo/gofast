@@ -16,8 +16,9 @@ import (
 	"vitego/conf"
 	"vitego/dao"
 	"vitego/job"
-	"vitego/pkg"
 	"vitego/webssr"
+
+	"github.com/daodao97/gossr"
 
 	"github.com/daodao97/xgo/xapp"
 	"github.com/daodao97/xgo/xlog"
@@ -79,9 +80,9 @@ func vueSsr(r *gin.Engine) {
 	fsyFrontend, _ := fs.Sub(webssr.FrontendDist, "dist/client")
 	fsyServer, _ := fs.Sub(webssr.ServerDist, "dist/server")
 
-	pkg.RunBlocking(
+	gossr.RunBlocking(
 		r,
-		pkg.FrontendBuild{
+		gossr.FrontendBuild{
 			FrontendDist: fsyFrontend,
 			ServerDist:   fsyServer,
 		},
@@ -89,13 +90,13 @@ func vueSsr(r *gin.Engine) {
 	)
 }
 
-const ssrFetchPrefix = pkg.DefaultSSRFetchPrefix
+const ssrFetchPrefix = gossr.DefaultSSRFetchPrefix
 
-func registerSSRFetchRoutes(r *gin.Engine) pkg.BackendDataFetcher {
+func registerSSRFetchRoutes(r *gin.Engine) gossr.BackendDataFetcher {
 	group := r.Group(ssrFetchPrefix, ssrGuardMiddleware())
 	page.Router(group)
 
-	return func(ctx context.Context, req *http.Request) (pkg.SSRPayload, error) {
+	return func(ctx context.Context, req *http.Request) (gossr.SSRPayload, error) {
 		payload, status, err := page.Resolve(ctx, req.URL.Path, req.URL.RawQuery)
 		if err != nil {
 			return nil, err
