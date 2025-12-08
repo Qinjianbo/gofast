@@ -16,7 +16,7 @@ import (
 	"vitego/conf"
 	"vitego/dao"
 	"vitego/job"
-	"vitego/webssr"
+	"vitego/web"
 
 	"github.com/daodao97/gossr"
 
@@ -77,8 +77,8 @@ func h() *gin.Engine {
 }
 
 func vueSsr(r *gin.Engine) {
-	fsyFrontend, _ := fs.Sub(webssr.FrontendDist, "dist/client")
-	fsyServer, _ := fs.Sub(webssr.ServerDist, "dist/server")
+	fsyFrontend, _ := fs.Sub(web.FrontendDist, "dist/client")
+	fsyServer, _ := fs.Sub(web.ServerDist, "dist/server")
 
 	gossr.RunBlocking(
 		r,

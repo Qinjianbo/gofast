@@ -1,4 +1,4 @@
-package webssr
+package web
 
 import "embed"
 

@@ -1,5 +1,5 @@
 # Global ARGs
-ARG FRONTEND_DIR=webssr
+ARG FRONTEND_DIR=web
 ARG PNPM_VERSION=10.18.1
 
 # ----------------------------------------------------
@@ -56,14 +56,13 @@ COPY ./api ./api
 COPY ./conf ./conf
 COPY ./dao ./dao
 COPY ./job ./job
-COPY ./pkg ./pkg
 COPY ./cmd ./cmd
 
 # 复制嵌入资源目录
 COPY ./adminui ./adminui
-COPY --from=frontend /app/${FRONTEND_DIR}/dist/client ./webssr/dist/client
-COPY --from=frontend /app/${FRONTEND_DIR}/dist/server ./webssr/dist/server
-COPY ./${FRONTEND_DIR}/webssr.go ./webssr/webssr.go
+COPY --from=frontend /app/${FRONTEND_DIR}/dist/client ./web/dist/client
+COPY --from=frontend /app/${FRONTEND_DIR}/dist/server ./web/dist/server
+COPY ./${FRONTEND_DIR}/embed.go ./web/embed.go
 
 # V8 版本需要 CGO
 ENV CGO_ENABLED=1

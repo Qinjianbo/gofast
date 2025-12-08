@@ -2,5 +2,5 @@
 .idea
 .vscode
 .github
-webssr/node_modules
+web/node_modules
 admin/adminui/node_modules
